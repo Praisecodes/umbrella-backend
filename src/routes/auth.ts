@@ -4,7 +4,7 @@ import { InferType, ValidationError } from 'yup';
 import { LOGIN_SCHEMA, SIGNUP_SCHEMA } from '../lib/validation_schemas';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { sendResponse } from '../lib/utils';
+import { generateOTP, sendResponse } from '../lib/utils';
 
 const AuthRouter = express.Router();
 
@@ -20,27 +20,41 @@ AuthRouter.post('/signup', async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     try {
-      const user = await Prisma.users.create({
-        data: {
-          ...rest,
-          password: passwordHash
-        }
+      const user = await Prisma.$transaction(async (tx) => {
+        const newUser = await Prisma.users.create({
+          data: {
+            ...rest,
+            password: passwordHash
+          }
+        });
+
+        const otp = await generateOTP();
+
+        await tx.otps.create({
+          data: {
+            ...otp,
+            userId: newUser.id,
+          }
+        });
+
+        return newUser;
       });
 
-      const jwt_secret = process.env.JWT_SECRET || "";
-
-      const token = jwt.sign({ id: user.id }, jwt_secret, { expiresIn: "7d" });
-
-      return sendResponse(201, res, "User created successfully", { user, token });
+      return sendResponse(201,
+        res,
+        "Account created successfully\nAn OTP was sent to your email. Please enter OTP to verify your email",
+        { user }
+      );
     } catch (error) {
       console.log(`Error creating user is (${req.url}):`, error);
-      return sendResponse(500, res, "Internal Server Error", null, ["Internal Server Error"]);
+      return sendResponse(500, res, "Internal Server Error", null, ["Something went wrong"]);
     }
   } catch (error) {
     if (error instanceof ValidationError) {
       return sendResponse(409, res, "Validation Error", null, error.errors);
     } else {
-      return sendResponse(500, res, "Internal Server Error", null, ["Internal Server Error"]);
+      console.log("Signup Error:", JSON.stringify(error, null, 2));
+      return sendResponse(500, res, "Internal Server Error", null, ["Something went wrong"]);
     }
   }
 });
@@ -83,7 +97,8 @@ AuthRouter.post('/login', async (req: Request, res: Response) => {
     if (error instanceof ValidationError) {
       return sendResponse(409, res, "Validation Error", null, error.errors);
     } else {
-      return sendResponse(500, res, "Internal Server Error", null, ["Internal Server Error"]);
+      console.log("Login Error:", JSON.stringify(error, null, 2));
+      return sendResponse(500, res, "Internal Server Error", null, ["Something went wrong"]);
     }
   }
 });

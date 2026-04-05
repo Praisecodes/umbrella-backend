@@ -29,6 +29,7 @@ model Users {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   clients   Clients[]
+  otps      Otps[]
 }
 
 model Clients {
@@ -54,4 +55,14 @@ model Platforms {
   updatedAt DateTime @updatedAt
 
   @@unique([clientId, platform])
+}
+
+model Otps {
+  id        String    @id @default(uuid())
+  otp       String
+  validTill DateTime
+  userId    String
+  user      Users     @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
 }
