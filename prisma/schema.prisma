@@ -20,16 +20,17 @@ enum Platform {
 }
 
 model Users {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
-  firstName String
-  lastName  String
-  username  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  clients   Clients[]
-  otps      Otps[]
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  username      String
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  clients       Clients[]
+  otps          Otps[]
 }
 
 model Clients {
@@ -37,7 +38,7 @@ model Clients {
   name        String
   description String
   userId      String
-  user        Users       @relation(fields: [userId], references: [id])
+  user        Users       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   platforms   Platforms[]
@@ -46,7 +47,7 @@ model Clients {
 model Platforms {
   id        String   @id @default(uuid())
   clientId  String
-  client    Clients  @relation(fields: [clientId], references: [id])
+  client    Clients  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   platform  Platform
   followers BigInt
   apiKey    String
@@ -62,7 +63,7 @@ model Otps {
   otp       String
   validTill DateTime
   userId    String
-  user      Users     @relation(fields: [userId], references: [id])
+  user      Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 }

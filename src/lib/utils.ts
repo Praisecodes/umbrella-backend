@@ -35,7 +35,6 @@ const generateOTP = async (): Promise<{ otp: string, validTill: string }> => {
     }
   }
 
-  // fallback (very unlikely)
   throw new Error("Unable to generate unique OTP after multiple attempts");
 }
 
@@ -48,12 +47,16 @@ const sendEmail = async (to: string, subject: string, html: string) => {
     },
   });
 
-  await transporter.sendMail({
-    from: `"Umbrella App" <${process.env.EMAIL_USER || ""}>`,
-    to,
-    subject,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"Umbrella App" <${process.env.EMAIL_USER || ""}>`,
+      to,
+      subject,
+      html,
+    });
+  } catch (error) {
+    throw new Error(error as any);
+  }
 };
 
 export {

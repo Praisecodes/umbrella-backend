@@ -4,7 +4,7 @@ import { InferType, ValidationError } from 'yup';
 import { LOGIN_SCHEMA, SIGNUP_SCHEMA } from '../lib/validation_schemas';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { generateOTP, sendResponse } from '../lib/utils';
+import { generateOTP, sendEmail, sendResponse } from '../lib/utils';
 
 const AuthRouter = express.Router();
 
@@ -15,13 +15,25 @@ AuthRouter.post('/signup', async (req: Request, res: Response) => {
 
   try {
     await SIGNUP_SCHEMA.validate(payload, { abortEarly: false });
-
     const { password, ...rest } = payload;
+
+    const existingUser = await Prisma.users.findFirst({
+      where: {
+        email: rest.email
+      }
+    });
+
+    if (!!existingUser) {
+      return sendResponse(409, res, "Conflict", ["User already exists, please login!"]);
+    }
+
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    let message = ""
 
     try {
       const user = await Prisma.$transaction(async (tx) => {
-        const newUser = await Prisma.users.create({
+        const newUser = await tx.users.create({
           data: {
             ...rest,
             password: passwordHash
@@ -37,13 +49,17 @@ AuthRouter.post('/signup', async (req: Request, res: Response) => {
           }
         });
 
+        message = `Hello, ${newUser.firstName} ${newUser.lastName}! Verify your email using the code below:\n${otp.otp}.\nThis code is valid for only 15 minutes`;
+
         return newUser;
       });
+
+      await sendEmail(user.email, "Welcome To Umbrella App", message);
 
       return sendResponse(201,
         res,
         "Account created successfully\nAn OTP was sent to your email. Please enter OTP to verify your email",
-        { user }
+        null
       );
     } catch (error) {
       console.log(`Error creating user is (${req.url}):`, error);
@@ -88,7 +104,9 @@ AuthRouter.post('/login', async (req: Request, res: Response) => {
 
       const token = jwt.sign({ id: user.id }, jwtSecret, { expiresIn: "7d" });
 
-      return sendResponse(200, res, "Success", { user, token });
+      const { password, ...rest } = user;
+
+      return sendResponse(200, res, "Success", { user: { ...rest }, token });
     } catch (error) {
       console.log("Error is:", error);
       return sendResponse(500, res, "Error logging you in", null, [error as any]);
