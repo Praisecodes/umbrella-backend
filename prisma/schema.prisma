@@ -19,6 +19,11 @@ enum Platform {
   tiktok
 }
 
+enum OTPType {
+  verify
+  reset
+}
+
 model Users {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -61,6 +66,7 @@ model Platforms {
 model Otps {
   id        String    @id @default(uuid())
   otp       String
+  type      OTPType
   validTill DateTime
   userId    String
   user      Users     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { generateOTP, sendEmail, sendResponse } from "../lib/utils";
-import { LOGIN_SCHEMA, SIGNUP_SCHEMA } from "../lib/validation_schemas";
-import { InferType, ValidationError } from "yup";
+import { LOGIN_SCHEMA, RESET_PASSWORD_SCHEMA, SIGNUP_SCHEMA } from "../lib/validation_schemas";
+import { InferType, string, ValidationError } from "yup";
 import { Prisma } from "../lib";
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
@@ -44,6 +44,7 @@ export const signupController = async (req: Request, res: Response) => {
           data: {
             ...otp,
             userId: newUser.id,
+            type: "verify",
           }
         });
 
@@ -114,6 +115,55 @@ export const loginController = async (req: Request, res: Response) => {
       return sendResponse(409, res, "Validation Error", null, error.errors);
     } else {
       console.log("Login Error:", JSON.stringify(error, null, 2));
+      return sendResponse(500, res, "Internal Server Error", null, ["Something went wrong"]);
+    }
+  }
+}
+
+export const resetPasswordController = async (req: Request, res: Response) => {
+  const payload: InferType<typeof RESET_PASSWORD_SCHEMA> = req.body;
+
+  try {
+    await RESET_PASSWORD_SCHEMA.validate(payload, { abortEarly: false });
+    const { password, token } = payload;
+
+    const JWT_SECRET = process.env.JWT_SECRET || "";
+
+    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+
+    const id = decoded?.id || "";
+    const type = decoded?.type || "";
+
+    if (!id || !type) {
+      console.log("Couldn't verify OTP. Decoded JWT is:", JSON.stringify(decoded, null, 2));
+      return sendResponse(409, res, "Error resetting your password", null, ["Error resetting your password"]);
+    }
+
+    const user = await Prisma.users.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      return sendResponse(404, res, "User not found", null, ["User not found"]);
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    const updatedUser = await Prisma.users.update({
+      data: { password: passwordHash },
+      where: { id }
+    });
+
+    const accessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+    const { password: updatedPassword, ...rest } = updatedUser;
+
+    return sendResponse(200, res, "Success", { user: { ...rest }, token: accessToken });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return sendResponse(409, res, "Validation Error", error.errors);
+    } else {
+      console.log("Error is:", JSON.stringify(error, null, 2));
       return sendResponse(500, res, "Internal Server Error", null, ["Something went wrong"]);
     }
   }
