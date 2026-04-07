@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { generateOTP, sendEmail, sendResponse } from "../lib/utils";
 import { LOGIN_SCHEMA, RESET_PASSWORD_SCHEMA, SIGNUP_SCHEMA } from "../lib/validation_schemas";
-import { InferType, string, ValidationError } from "yup";
+import { InferType, ValidationError } from "yup";
 import { Prisma } from "../lib";
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
