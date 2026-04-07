@@ -131,6 +131,11 @@ export const verifyOtpController = async (req: Request, res: Response) => {
             },
             where: {
               id: user.id
+            },
+            include: {
+              clients: {
+                include: { platforms: true }
+              }
             }
           });
 

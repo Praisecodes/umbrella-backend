@@ -84,6 +84,11 @@ export const loginController = async (req: Request, res: Response) => {
       const user = await Prisma.users.findFirst({
         where: {
           email: payload.email
+        },
+        include: {
+          clients: {
+            include: { platforms: true }
+          }
         }
       });
 
@@ -151,7 +156,12 @@ export const resetPasswordController = async (req: Request, res: Response) => {
 
     const updatedUser = await Prisma.users.update({
       data: { password: passwordHash },
-      where: { id }
+      where: { id },
+      include: {
+        clients: {
+          include: { platforms: true }
+        }
+      }
     });
 
     const accessToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
