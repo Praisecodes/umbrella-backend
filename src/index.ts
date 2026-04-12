@@ -25,7 +25,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use('/auth', AuthRouter);
 app.use('/otp', OtpRouter);
-app.use('/user', UserRouter);
+app.use('/user', AuthMiddleWare, UserRouter);
 app.use('/clients', AuthMiddleWare, ClientsRouter);
 
 app.listen(PORT, () => {

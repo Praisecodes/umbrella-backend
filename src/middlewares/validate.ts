@@ -2,7 +2,7 @@ import { AnySchema, ValidationError } from "yup";
 import { Request, Response, NextFunction } from "express";
 import { sendResponse } from "../lib/utils";
 
-export const validate = (schema: AnySchema) => (
+export const validationMiddleware = (schema: AnySchema) => (
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       req.body = await schema.validate(req.body, { abortEarly: false });

@@ -1,9 +1,11 @@
 import express from 'express';
 import { createClient, deleteClient, getAllClients, getClient, updateClient } from '../controllers/clients.controller';
+import { validationMiddleware } from '../middlewares/validate';
+import { SIGNUP_SCHEMA } from '../lib/validation_schemas';
 
 const ClientsRouter = express.Router();
 
-ClientsRouter.post('/', createClient);
+ClientsRouter.post('/', validationMiddleware(SIGNUP_SCHEMA), createClient);
 
 ClientsRouter.get('/', getAllClients);
 

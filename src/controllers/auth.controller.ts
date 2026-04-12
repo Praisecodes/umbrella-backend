@@ -22,7 +22,7 @@ export const signupController = async (req: Request, res: Response) => {
     });
 
     if (!!existingUser) {
-      return sendResponse(409, res, "Conflict", ["User already exists, please login!"]);
+      return sendResponse(409, res, "Conflict", null, ["User already exists, please login!"]);
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);

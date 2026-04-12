@@ -1,18 +1,13 @@
 import { Request, Response } from "express";
-import { string, ValidationError } from "yup";
 import { Prisma } from "../lib";
 import { sendResponse } from "../lib/utils";
+import jwt from 'jsonwebtoken';
 
 export const deleteUserController = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  const userId = (req as any).userId;
 
   try {
-    await string()
-      .required("Enter the email of the user")
-      .email("Enter a valid email address")
-      .validate(email, { abortEarly: false });
-
-    const user = await Prisma.users.findUnique({ where: { email } });
+    const user = await Prisma.users.findUnique({ where: { id: userId } });
 
     if (!user) {
       return sendResponse(404, res, "User not found", null, ["User not found"]);
@@ -26,11 +21,29 @@ export const deleteUserController = async (req: Request, res: Response) => {
 
     return sendResponse(200, res, "Successfully deleted user", null);
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return sendResponse(409, res, "Validation Error", null, error.errors);
-    } else {
-      console.log("Error is:", JSON.stringify(error, null, 2));
-      return sendResponse(500, res, "Internal Server Error", ["Internal Server Error"]);
+    console.log("Error is:", JSON.stringify(error, null, 2));
+    return sendResponse(500, res, "Internal Server Error", ["Internal Server Error"]);
+  }
+}
+
+export const getSession = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+
+  try {
+    const user = await Prisma.users.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return sendResponse(404, res, "User Not Found", null, ["User Not Found"]);
     }
+
+    const { password, ...rest } = user;
+    const JWT_SECRET = process.env.JWT_SECRET || "";
+
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+
+    return sendResponse(200, res, "Session Restored Successfully", { user: { ...rest }, token });
+  } catch (error) {
+    console.log("Error is:", JSON.stringify(error, null, 2));
+    return sendResponse(500, res, "Internal Server Error", null, ["Something went wrong"]);
   }
 }
