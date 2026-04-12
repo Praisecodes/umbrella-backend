@@ -85,11 +85,6 @@ export const loginController = async (req: Request, res: Response) => {
         where: {
           email: payload.email
         },
-        include: {
-          clients: {
-            include: { platforms: true }
-          }
-        }
       });
 
       if (!user) {
