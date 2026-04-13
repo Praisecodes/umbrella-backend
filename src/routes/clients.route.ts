@@ -1,17 +1,17 @@
 import express from 'express';
 import { createClient, deleteClient, getAllClients, getClient, updateClient } from '../controllers/clients.controller';
 import { validationMiddleware } from '../middlewares/validate';
-import { SIGNUP_SCHEMA } from '../lib/validation_schemas';
+import { CREATE_CLIENT_SCHEMA, UPDATE_CLIENT_SCHEMA } from '../lib/validation_schemas';
 
 const ClientsRouter = express.Router();
 
-ClientsRouter.post('/', validationMiddleware(SIGNUP_SCHEMA), createClient);
+ClientsRouter.post('/', validationMiddleware(CREATE_CLIENT_SCHEMA), createClient);
 
 ClientsRouter.get('/', getAllClients);
 
 ClientsRouter.get('/:id', getClient);
 
-ClientsRouter.patch('/update/:id', updateClient);
+ClientsRouter.patch('/update/:id', validationMiddleware(UPDATE_CLIENT_SCHEMA), updateClient);
 
 ClientsRouter.delete('/', deleteClient);
 

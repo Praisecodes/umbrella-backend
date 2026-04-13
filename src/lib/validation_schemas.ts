@@ -69,3 +69,15 @@ export const RESET_PASSWORD_SCHEMA = object({
   token: string()
     .required("Token is required"),
 });
+
+export const CREATE_CLIENT_SCHEMA = object({
+  name: string()
+    .required("Client name is required"),
+  description: string()
+    .required("Tell us a bit about your client")
+});
+
+export const UPDATE_CLIENT_SCHEMA = object({
+  name: string(),
+  description: string()
+});
